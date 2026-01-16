@@ -85,12 +85,20 @@
 
     <div class="footer-actions">
         <button class="btn-main" onclick="generarWord()">Bajar Word</button>
-        <button class="btn-main btn-pdf" onclick="generarPDF()">Bajar PDF</button>
+        <button class="btn-main btn-pdf" onclick="generarPDF()" id="miBoton" disabled>Bajar PDF</button>
     </div>
 </div>
 
 <div id="pdf-render"><div id="pdf-content"></div></div>
-
+    
+    <script>
+        const boton = document.getElementById("miBoton");
+        const mensaje = document.getElementById("mensaje");
+        // Desactivar el botón y mostrar el mensaje
+        boton.disabled = true;
+        mensaje.textContent = "No disponible";
+    </script>
+    
 <script>
     let cv = { exp: [], edu: [], anexos: [] };
     const { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, BorderStyle, PageBreak } = docx;
