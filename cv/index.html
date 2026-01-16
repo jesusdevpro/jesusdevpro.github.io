@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CV Studio Pro v2</title>
+    <title>CV Studio Pro v4</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23007AFF'/><path d='M30 35h40M30 50h40M30 65h25' stroke='white' stroke-width='8' stroke-linecap='round'/></svg>">
     <link rel="manifest" id="pwa-manifest">
@@ -20,6 +20,7 @@
         .app-container { width: 100%; max-width: 600px; padding-bottom: 120px; }
         .card { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.05); }
         .card h3 { margin-top: 0; font-size: 1.1rem; color: var(--primary); border-bottom: 1px solid #F2F2F7; padding-bottom: 10px; }
+        label { font-size: 0.8rem; color: #8E8E93; margin-left: 5px; }
         input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1.5px solid #E5E5EA; border-radius: 10px; font-size: 16px; background: #F9F9FB; }
         .btn-add { background: #F2F2F7; color: var(--primary); border: 2px dashed #D1D1D6; width: 100%; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; }
         .item-row { background: #F9F9FB; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin: 8px 0; border-left: 4px solid var(--primary); }
@@ -27,10 +28,8 @@
         .btn-main { background: var(--primary); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; cursor: pointer; }
         .btn-pdf { background: var(--dark); }
         .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 10px; border: 1px solid #ddd; }
-        .credits { text-align: center; margin-top: 20px; font-size: 0.8rem; color: #8E8E93; }
-        .swal-date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        /* Estilos de exportación PDF (Ocultos en la App) */
+        
+        /* Oculto para exportación */
         #pdf-render { display: none; background: white; padding: 40px; color: black; }
         .pdf-section { border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: bold; text-transform: uppercase; margin-top: 20px; padding-bottom: 5px; }
     </style>
@@ -45,6 +44,11 @@
     <div class="card">
         <h3>👤 Datos Personales</h3>
         <input type="text" id="nombre" placeholder="Nombre Completo">
+        <input type="text" id="cedula" placeholder="Cédula de Identidad (V-00.000.000)">
+        
+        <label>Fecha de Nacimiento:</label>
+        <input type="date" id="fecha_nacimiento">
+        
         <input type="text" id="cargo" placeholder="Profesión o Título">
         <input type="text" id="telefono" placeholder="📱 Teléfono">
         <input type="text" id="ubicacion" placeholder="📍 Ciudad, País">
@@ -85,16 +89,14 @@
     </div>
 </div>
 
-<div id="pdf-render">
-    <div id="pdf-content"></div>
-</div>
+<div id="pdf-render"><div id="pdf-content"></div></div>
 
 <script>
     let cv = { exp: [], edu: [], anexos: [] };
-    const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, ImageRun, BorderStyle, PageBreak } = docx;
+    const { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, BorderStyle, PageBreak } = docx;
 
+    // Lógica de UI y Modales (Manteniendo tu estructura anterior)
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const getMonths = () => months.map(m => `<option value="${m}">${m}</option>`).join('');
     const getYears = () => {
         let years = "";
         for(let i = new Date().getFullYear(); i >= 1970; i--) years += `<option value="${i}">${i}</option>`;
@@ -107,26 +109,19 @@
             html: `
                 <input id="sw-emp" class="swal2-input" placeholder="Empresa">
                 <input id="sw-car" class="swal2-input" placeholder="Cargo">
-                <p style="text-align:left; margin:10px 0 0 5px; font-size:0.8rem">Fecha Inicio:</p>
-                <div class="swal-date-grid">
-                    <select id="sw-mes-in" class="swal2-input">${getMonths()}</select>
-                    <select id="sw-ano-in" class="swal2-input">${getYears()}</select>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
+                    <select id="sw-m1" class="swal2-input">${months.map(m=>`<option>${m}</option>`)}</select>
+                    <select id="sw-a1" class="swal2-input">${getYears()}</select>
                 </div>
-                <p style="text-align:left; margin:10px 0 0 5px; font-size:0.8rem">Fecha Fin:</p>
-                <div class="swal-date-grid">
-                    <select id="sw-mes-fi" class="swal2-input"><option value="Act">Actualidad</option>${getMonths()}</select>
-                    <select id="sw-ano-fi" class="swal2-input"><option value="">-</option>${getYears()}</select>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
+                    <select id="sw-m2" class="swal2-input"><option value="Presente">Presente</option>${months.map(m=>`<option>${m}</option>`)}</select>
+                    <select id="sw-a2" class="swal2-input"><option value="">-</option>${getYears()}</select>
                 </div>
-                <textarea id="sw-tar" class="swal2-textarea" placeholder="Descripción de tareas y logros..."></textarea>
+                <textarea id="sw-tar" class="swal2-textarea" placeholder="Descripción..."></textarea>
             `,
             preConfirm: () => {
-                const fin = document.getElementById('sw-mes-fi').value === 'Act' ? 'Actualidad' : `${document.getElementById('sw-mes-fi').value} ${document.getElementById('sw-ano-fi').value}`;
-                return {
-                    emp: document.getElementById('sw-emp').value,
-                    car: document.getElementById('sw-car').value,
-                    periodo: `${document.getElementById('sw-mes-in').value} ${document.getElementById('sw-ano-in').value} – ${fin}`,
-                    tar: document.getElementById('sw-tar').value
-                }
+                const fin = document.getElementById('sw-m2').value === 'Presente' ? 'Actualidad' : `${document.getElementById('sw-m2').value} ${document.getElementById('sw-a2').value}`;
+                return { emp: document.getElementById('sw-emp').value, car: document.getElementById('sw-car').value, periodo: `${document.getElementById('sw-m1').value} ${document.getElementById('sw-a1').value} – ${fin}`, tar: document.getElementById('sw-tar').value };
             }
         });
         if (v && v.emp) { cv.exp.push(v); updateUI('lista-exp', cv.exp, 'car'); }
@@ -135,18 +130,8 @@
     async function modalEdu() {
         const { value: v } = await Swal.fire({
             title: 'Educación',
-            html: `
-                <input id="sw-tit" class="swal2-input" placeholder="Título obtenido">
-                <input id="sw-uni" class="swal2-input" placeholder="Institución">
-                <div class="swal-date-grid">
-                    <select id="sw-ano-edu" class="swal2-input">${getYears()}</select>
-                </div>
-            `,
-            preConfirm: () => ({
-                tit: document.getElementById('sw-tit').value,
-                uni: document.getElementById('sw-uni').value,
-                fec: document.getElementById('sw-ano-edu').value
-            })
+            html: `<input id="sw-tit" class="swal2-input" placeholder="Título"><input id="sw-uni" class="swal2-input" placeholder="Institución"><select id="sw-ano" class="swal2-input">${getYears()}</select>`,
+            preConfirm: () => ({ tit: document.getElementById('sw-tit').value, uni: document.getElementById('sw-uni').value, fec: document.getElementById('sw-ano').value })
         });
         if (v && v.tit) { cv.edu.push(v); updateUI('lista-edu', cv.edu, 'tit'); }
     }
@@ -160,11 +145,10 @@
     }
 
     function renderAnexos() {
-        const div = document.getElementById('preview-anexos');
-        div.innerHTML = cv.anexos.map((src, i) => `
+        document.getElementById('preview-anexos').innerHTML = cv.anexos.map((src, i) => `
             <div style="position: relative;">
                 <img src="${src}" class="preview-img">
-                <span onclick="cv.anexos.splice(${i},1); renderAnexos()" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:12px; line-height:20px; text-align:center; cursor:pointer;">×</span>
+                <span onclick="cv.anexos.splice(${i},1); renderAnexos()" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:12px; text-align:center; cursor:pointer;">×</span>
             </div>
         `).join('');
     }
@@ -173,12 +157,12 @@
         document.getElementById(id).innerHTML = arr.map(i => `<div class="item-row"><span>${i[key]}</span></div>`).join('');
     }
 
-    // --- GENERACIÓN WORD ---
+    // --- WORD ---
     async function generarWord() {
         Swal.fire({ title: 'Creando Word...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        
         const children = [
-            new Paragraph({ children: [new TextRun({ text: document.getElementById('nombre').value.toUpperCase(), bold: true, size: 48 })], alignment: AlignmentType.CENTER }),
+            new Paragraph({ children: [new TextRun({ text: document.getElementById('nombre').value.toUpperCase(), bold: true, size: 44 })], alignment: AlignmentType.CENTER }),
+            new Paragraph({ children: [new TextRun({ text: `C.I: ${document.getElementById('cedula').value} | F. Nac: ${document.getElementById('fecha_nacimiento').value}`, size: 18, color: "444444" })], alignment: AlignmentType.CENTER }),
             new Paragraph({ children: [new TextRun({ text: document.getElementById('cargo').value.toUpperCase(), size: 24, color: "666666" })], alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
             new Paragraph({ children: [new TextRun({ text: `${document.getElementById('telefono').value} | ${document.getElementById('email').value} | ${document.getElementById('ubicacion').value}`, size: 18 })], alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
             
@@ -202,76 +186,39 @@
             children.push(new Paragraph({ children: [new PageBreak()] }));
             const resp = await fetch(base64);
             const blob = await resp.blob();
-            children.push(new Paragraph({
-                children: [new ImageRun({ data: blob, transformation: { width: 600, height: 800 } })],
-                alignment: AlignmentType.CENTER
-            }));
+            children.push(new Paragraph({ children: [new ImageRun({ data: blob, transformation: { width: 550, height: 750 } })], alignment: AlignmentType.CENTER }));
         }
 
         const doc = new Document({ sections: [{ children }] });
-        Packer.toBlob(doc).then(blob => {
-            saveAs(blob, "CV_Profesional.docx");
-            Swal.fire('¡Éxito!', 'Word descargado', 'success');
-        });
+        Packer.toBlob(doc).then(blob => { saveAs(blob, "CV_Identidad.docx"); Swal.fire('¡Éxito!', 'Word descargado', 'success'); });
     }
 
     function createHeader(t) {
         return [new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 24, color: "007AFF" })], border: { bottom: { color: "007AFF", style: BorderStyle.SINGLE, size: 6 } }, spacing: { before: 400, after: 150 } })];
     }
 
-    // --- GENERACIÓN PDF (MODO ESPEJO DEL WORD) ---
+    // --- PDF ---
     function generarPDF() {
-        const render = document.getElementById('pdf-render');
         const content = document.getElementById('pdf-content');
-        
         content.innerHTML = `
             <div style="text-align:center">
-                <h1 style="margin:0; font-size:32px;">${document.getElementById('nombre').value.toUpperCase()}</h1>
-                <p style="color:#666; font-size:18px;">${document.getElementById('cargo').value.toUpperCase()}</p>
+                <h1 style="margin:0; font-size:28px;">${document.getElementById('nombre').value.toUpperCase()}</h1>
+                <p style="margin:5px 0; font-size:14px; color:#555">C.I: ${document.getElementById('cedula').value} | F. Nac: ${document.getElementById('fecha_nacimiento').value}</p>
+                <p style="color:#007AFF; font-size:18px; font-weight:bold">${document.getElementById('cargo').value.toUpperCase()}</p>
                 <p style="font-size:12px;">${document.getElementById('telefono').value} | ${document.getElementById('email').value} | ${document.getElementById('ubicacion').value}</p>
             </div>
-            
-            <div class="pdf-section">Perfil</div>
-            <p style="font-size:14px;">${document.getElementById('perfil').value}</p>
-
-            <div class="pdf-section">Experiencia Profesional</div>
-            ${cv.exp.map(e => `
-                <div style="margin-top:15px">
-                    <div style="font-weight:bold">${e.emp.toUpperCase()} | ${e.car}</div>
-                    <div style="font-style:italic; font-size:12px">${e.periodo}</div>
-                    <div style="font-size:13px">${e.tar}</div>
-                </div>
-            `).join('')}
-
+            <div class="pdf-section">Perfil</div><p style="font-size:13px;">${document.getElementById('perfil').value}</p>
+            <div class="pdf-section">Experiencia</div>
+            ${cv.exp.map(e => `<div style="margin-top:10px"><div style="font-weight:bold">${e.emp} | ${e.car}</div><div style="font-size:11px; font-style:italic">${e.periodo}</div><div style="font-size:12px">${e.tar}</div></div>`).join('')}
             <div class="pdf-section">Educación</div>
-            ${cv.edu.map(e => `
-                <div style="margin-top:10px; font-weight:bold">${e.tit} — ${e.uni} (${e.fec})</div>
-            `).join('')}
-
-            ${cv.anexos.map(img => `
-                <div style="page-break-before: always; text-align:center">
-                    <img src="${img}" style="max-width:100%; max-height:950px">
-                </div>
-            `).join('')}
+            ${cv.edu.map(e => `<div style="margin-top:5px; font-weight:bold">${e.tit} — ${e.uni} (${e.fec})</div>`).join('')}
+            ${cv.anexos.map(img => `<div style="page-break-before: always; text-align:center"><img src="${img}" style="max-width:100%; max-height:900px"></div>`).join('')}
         `;
-
-        render.style.display = "block";
-        const opt = { 
-            margin: 10, 
-            filename: 'CV_Profesional.pdf', 
-            html2canvas: { scale: 2 }, 
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-        };
-        
-        html2pdf().from(content).set(opt).save().then(() => {
-            render.style.display = "none";
-            Swal.fire('¡Éxito!', 'PDF generado correctamente', 'success');
+        document.getElementById('pdf-render').style.display = "block";
+        html2pdf().from(content).set({ margin: 10, filename: 'CV_Identidad.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } }).save().then(() => {
+            document.getElementById('pdf-render').style.display = "none";
         });
     }
-
-    const manifest = { name: "CV Maker Pro", short_name: "CVPro", start_url: ".", display: "standalone", background_color: "#F2F2F7", theme_color: "#007AFF", icons: [{ src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23007AFF'/><path d='M30 35h40M30 50h40M30 65h25' stroke='white' stroke-width='8' stroke-linecap='round'/></svg>", sizes: "512x512", type: "image/svg+xml" }] };
-    document.getElementById('pwa-manifest').setAttribute('href', 'data:application/json;base64,' + btoa(JSON.stringify(manifest)));
 </script>
-
 </body>
 </html>
