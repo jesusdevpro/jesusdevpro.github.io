@@ -23,12 +23,16 @@
         input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1.5px solid #E5E5EA; border-radius: 10px; font-size: 16px; background: #F9F9FB; }
         .btn-add { background: #F2F2F7; color: var(--primary); border: 2px dashed #D1D1D6; width: 100%; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; }
         .item-row { background: #F9F9FB; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin: 8px 0; border-left: 4px solid var(--primary); }
-        .footer-actions { position: fixed; bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); padding: 15px; border-radius: 20px; box-shadow: 0 -5px 25px rgba(0,0,0,0.1); width: calc(100% - 30px); max-width: 570px; }
+        .footer-actions { position: fixed; bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); padding: 15px; border-radius: 20px; box-shadow: 0 -5px 25px rgba(0,0,0,0.1); width: calc(100% - 30px); max-width: 570px; z-index: 1000; }
         .btn-main { background: var(--primary); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; cursor: pointer; }
         .btn-pdf { background: var(--dark); }
         .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 10px; border: 1px solid #ddd; }
         .credits { text-align: center; margin-top: 20px; font-size: 0.8rem; color: #8E8E93; }
         .swal-date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* Estilos de exportación PDF (Ocultos en la App) */
+        #pdf-render { display: none; background: white; padding: 40px; color: black; }
+        .pdf-section { border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: bold; text-transform: uppercase; margin-top: 20px; padding-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -45,6 +49,11 @@
         <input type="text" id="telefono" placeholder="📱 Teléfono">
         <input type="text" id="ubicacion" placeholder="📍 Ciudad, País">
         <input type="text" id="email" placeholder="✉️ Correo">
+    </div>
+
+    <div class="card">
+        <h3>📝 Resumen Profesional</h3>
+        <textarea id="perfil" rows="3" placeholder="Describe tu perfil y logros principales..."></textarea>
     </div>
 
     <div class="card">
@@ -66,31 +75,32 @@
         <div id="preview-anexos" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;"></div>
     </div>
 
-    <div class="app-container">
     <div style="text-align: center; margin-bottom: 25px;">
         <p style="color: #8E8E93;">Desarrollado por: jesus.rivero86@gmail.com</p>
     </div>
 
     <div class="footer-actions">
         <button class="btn-main" onclick="generarWord()">Bajar Word</button>
-        <!--button class="btn-main btn-pdf" onclick="generarPDF()">Bajar PDF</button-->
+        <button class="btn-main btn-pdf" onclick="generarPDF()">Bajar PDF</button>
     </div>
+</div>
+
+<div id="pdf-render">
+    <div id="pdf-content"></div>
 </div>
 
 <script>
     let cv = { exp: [], edu: [], anexos: [] };
     const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, ImageRun, BorderStyle, PageBreak } = docx;
 
-    // Generador de opciones para el selector de fechas
+    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const getMonths = () => months.map(m => `<option value="${m}">${m}</option>`).join('');
     const getYears = () => {
         let years = "";
         for(let i = new Date().getFullYear(); i >= 1970; i--) years += `<option value="${i}">${i}</option>`;
         return years;
     };
-    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const getMonths = () => months.map((m, i) => `<option value="${m}">${m}</option>`).join('');
 
-    // MODAL EXPERIENCIA CON FECHAS INICIO/FIN
     async function modalExp() {
         const { value: v } = await Swal.fire({
             title: 'Detalles del Puesto',
@@ -107,9 +117,8 @@
                     <select id="sw-mes-fi" class="swal2-input"><option value="Act">Actualidad</option>${getMonths()}</select>
                     <select id="sw-ano-fi" class="swal2-input"><option value="">-</option>${getYears()}</select>
                 </div>
-                <textarea id="sw-tar" class="swal2-textarea" placeholder="Descripción..."></textarea>
+                <textarea id="sw-tar" class="swal2-textarea" placeholder="Descripción de tareas y logros..."></textarea>
             `,
-            confirmButtonColor: '#007AFF',
             preConfirm: () => {
                 const fin = document.getElementById('sw-mes-fi').value === 'Act' ? 'Actualidad' : `${document.getElementById('sw-mes-fi').value} ${document.getElementById('sw-ano-fi').value}`;
                 return {
@@ -120,7 +129,7 @@
                 }
             }
         });
-        if (v && v.emp) { cv.exp.push(v); updateUI('lista-exp', cv.exp, 'emp'); }
+        if (v && v.emp) { cv.exp.push(v); updateUI('lista-exp', cv.exp, 'car'); }
     }
 
     async function modalEdu() {
@@ -164,60 +173,102 @@
         document.getElementById(id).innerHTML = arr.map(i => `<div class="item-row"><span>${i[key]}</span></div>`).join('');
     }
 
+    // --- GENERACIÓN WORD ---
     async function generarWord() {
-        Swal.fire({ title: 'Creando Documento...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
+        Swal.fire({ title: 'Creando Word...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
         const children = [
-            new Paragraph({ children: [new TextRun({ text: document.getElementById('nombre').value.toUpperCase(), bold: true, size: 48, font: "Arial" })], alignment: AlignmentType.CENTER }),
-            new Paragraph({ children: [new TextRun({ text: document.getElementById('cargo').value.toUpperCase(), size: 24, font: "Arial", color: "666666" })], alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
-            new Paragraph({ children: [new TextRun({ text: `${document.getElementById('telefono').value} | ${document.getElementById('email').value}`, size: 18 })], alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+            new Paragraph({ children: [new TextRun({ text: document.getElementById('nombre').value.toUpperCase(), bold: true, size: 48 })], alignment: AlignmentType.CENTER }),
+            new Paragraph({ children: [new TextRun({ text: document.getElementById('cargo').value.toUpperCase(), size: 24, color: "666666" })], alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
+            new Paragraph({ children: [new TextRun({ text: `${document.getElementById('telefono').value} | ${document.getElementById('email').value} | ${document.getElementById('ubicacion').value}`, size: 18 })], alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
             
-            ...createH("EXPERIENCIA"),
+            ...createHeader("PERFIL"),
+            new Paragraph({ children: [new TextRun({ text: document.getElementById('perfil').value, size: 21 })], spacing: { after: 200 } }),
+
+            ...createHeader("EXPERIENCIA"),
             ...cv.exp.flatMap(e => [
                 new Paragraph({ children: [new TextRun({ text: `${e.emp.toUpperCase()} | ${e.car}`, bold: true, size: 22 })], spacing: { before: 200 } }),
                 new Paragraph({ children: [new TextRun({ text: e.periodo, italic: true, size: 18 })] }),
                 new Paragraph({ children: [new TextRun({ text: e.tar, size: 20 })], spacing: { after: 100 } })
             ]),
 
-            ...createH("EDUCACIÓN"),
+            ...createHeader("EDUCACIÓN"),
             ...cv.edu.flatMap(e => [
                 new Paragraph({ children: [new TextRun({ text: `${e.tit} — ${e.uni} (${e.fec})`, bold: true, size: 21 })], spacing: { after: 150 } })
             ])
         ];
 
-        // AGREGAR ANEXOS: CADA UNO EN UNA PÁGINA COMPLETA
         for (const base64 of cv.anexos) {
-            children.push(new Paragraph({ children: [new PageBreak()] })); // Salto de página
+            children.push(new Paragraph({ children: [new PageBreak()] }));
             const resp = await fetch(base64);
             const blob = await resp.blob();
             children.push(new Paragraph({
-                children: [
-                    new ImageRun({
-                        data: blob,
-                        transformation: { width: 600, height: 800 }, // Tamaño máximo en A4
-                    })
-                ],
+                children: [new ImageRun({ data: blob, transformation: { width: 600, height: 800 } })],
                 alignment: AlignmentType.CENTER
             }));
         }
 
         const doc = new Document({ sections: [{ children }] });
         Packer.toBlob(doc).then(blob => {
-            saveAs(blob, "CV_Final_Profesional.docx");
-            Swal.fire('¡Éxito!', 'Archivo descargado', 'success');
+            saveAs(blob, "CV_Profesional.docx");
+            Swal.fire('¡Éxito!', 'Word descargado', 'success');
         });
     }
 
-    function createH(t) {
+    function createHeader(t) {
         return [new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 24, color: "007AFF" })], border: { bottom: { color: "007AFF", style: BorderStyle.SINGLE, size: 6 } }, spacing: { before: 400, after: 150 } })];
     }
 
+    // --- GENERACIÓN PDF (MODO ESPEJO DEL WORD) ---
     function generarPDF() {
-        const element = document.body;
-        html2pdf().from(element).set({ margin: 10, filename: 'CV_documento.pdf', html2canvas: { scale: 2 } }).save();
+        const render = document.getElementById('pdf-render');
+        const content = document.getElementById('pdf-content');
+        
+        content.innerHTML = `
+            <div style="text-align:center">
+                <h1 style="margin:0; font-size:32px;">${document.getElementById('nombre').value.toUpperCase()}</h1>
+                <p style="color:#666; font-size:18px;">${document.getElementById('cargo').value.toUpperCase()}</p>
+                <p style="font-size:12px;">${document.getElementById('telefono').value} | ${document.getElementById('email').value} | ${document.getElementById('ubicacion').value}</p>
+            </div>
+            
+            <div class="pdf-section">Perfil</div>
+            <p style="font-size:14px;">${document.getElementById('perfil').value}</p>
+
+            <div class="pdf-section">Experiencia Profesional</div>
+            ${cv.exp.map(e => `
+                <div style="margin-top:15px">
+                    <div style="font-weight:bold">${e.emp.toUpperCase()} | ${e.car}</div>
+                    <div style="font-style:italic; font-size:12px">${e.periodo}</div>
+                    <div style="font-size:13px">${e.tar}</div>
+                </div>
+            `).join('')}
+
+            <div class="pdf-section">Educación</div>
+            ${cv.edu.map(e => `
+                <div style="margin-top:10px; font-weight:bold">${e.tit} — ${e.uni} (${e.fec})</div>
+            `).join('')}
+
+            ${cv.anexos.map(img => `
+                <div style="page-break-before: always; text-align:center">
+                    <img src="${img}" style="max-width:100%; max-height:950px">
+                </div>
+            `).join('')}
+        `;
+
+        render.style.display = "block";
+        const opt = { 
+            margin: 10, 
+            filename: 'CV_Profesional.pdf', 
+            html2canvas: { scale: 2 }, 
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+        };
+        
+        html2pdf().from(content).set(opt).save().then(() => {
+            render.style.display = "none";
+            Swal.fire('¡Éxito!', 'PDF generado correctamente', 'success');
+        });
     }
 
-    // Manifest Autoinyectado
     const manifest = { name: "CV Maker Pro", short_name: "CVPro", start_url: ".", display: "standalone", background_color: "#F2F2F7", theme_color: "#007AFF", icons: [{ src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23007AFF'/><path d='M30 35h40M30 50h40M30 65h25' stroke='white' stroke-width='8' stroke-linecap='round'/></svg>", sizes: "512x512", type: "image/svg+xml" }] };
     document.getElementById('pwa-manifest').setAttribute('href', 'data:application/json;base64,' + btoa(JSON.stringify(manifest)));
 </script>
