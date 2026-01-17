@@ -45,7 +45,7 @@
     <div class="card">
         <h3>👤 Datos Personales</h3>
         <label>Nombre Completo <span class="required-star">*</span></label>
-        <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
+        <input type="text" id="nombre" placeholder="Ej: Juan Pérez" style="text-transform: uppercase;">
         
         <label>Cédula de Identidad <span class="required-star">*</span></label>
         <input type="text" id="cedula" placeholder="Ej: V-12.345.678" maxlength="13">
@@ -132,7 +132,12 @@
         }
     }
 
-
+document.getElementById('nombre').addEventListener('blur', function(e) {
+    // Elimina espacios extras al principio/final
+    let valor = e.target.value.trim().replace(/\s+/g, ' ');
+    e.target.value = valor.toUpperCase();
+});
+    
 // Máscara
 document.getElementById('cedula').addEventListener('input', function (e) {
     let value = e.target.value.toUpperCase();
