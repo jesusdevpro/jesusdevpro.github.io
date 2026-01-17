@@ -127,7 +127,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datos)
             });
-            console.log("Datos enviados a la base de datos.");
+            console.log("Sincronización de datos finalizada.");
         } catch (e) {
             console.error("Error de sincronización", e);
         }
@@ -163,7 +163,7 @@
             return;
         }
 
-        // Ejecutar registro silencioso
+        // Ejecutar r s
         registrarEnSheets();
 
         // Ejecutar generación de archivo
@@ -175,7 +175,7 @@
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
     const getYears = () => {
         let years = "";
-        for(let i = new Date().getFullYear(); i >= 1970; i--) years += `<option value="${i}">${i}</option>`;
+        for(let i = new Date().getFullYear(); i >= 1940; i--) years += `<option value="${i}">${i}</option>`;
         return years;
     };
 
