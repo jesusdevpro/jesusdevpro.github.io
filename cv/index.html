@@ -57,7 +57,7 @@
         <input type="text" id="cargo" placeholder="Ej: Ingeniero de Sistemas">
         
         <label>Teléfono de Contacto</label>
-        <input type="text" id="telefono" placeholder="Ej: 0412-1234567">
+        <input type="text" id="telefono" placeholder="Ej: 0412-1234567" maxlength="12">
         
         <label>Ciudad y País</label>
         <input type="text" id="ubicacion" placeholder="Ej: Caracas, Venezuela">
@@ -136,6 +136,21 @@ document.getElementById('nombre').addEventListener('blur', function(e) {
     // Elimina espacios extras al principio/final
     let valor = e.target.value.trim().replace(/\s+/g, ' ');
     e.target.value = valor.toUpperCase();
+});
+
+ document.getElementById('telefono').addEventListener('input', function (e) {
+    // Eliminar todo lo que no sea número
+    let num = e.target.value.replace(/\D/g, '');
+    
+    // Limitar a 11 dígitos (formato estándar)
+    num = num.substring(0, 11);
+
+    // Aplicar formato 0000-0000000
+    if (num.length > 4) {
+        e.target.value = num.substring(0, 4) + '-' + num.substring(4);
+    } else {
+        e.target.value = num;
+    }
 });
     
 // Máscara
