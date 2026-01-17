@@ -48,7 +48,7 @@
         <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
         
         <label>Cédula de Identidad <span class="required-star">*</span></label>
-        <input type="text" id="cedula" placeholder="Ej: V-12.345.678">
+        <input type="text" id="cedula" placeholder="Ej: V-12.345.678" maxlength="13">
         
         <label>Fecha de Nacimiento <span class="required-star">*</span></label>
         <input type="date" id="fecha_nacimiento">
@@ -132,6 +132,41 @@
         }
     }
 
+
+// Máscara
+document.getElementById('cedula').addEventListener('input', function (e) {
+    let value = e.target.value.toUpperCase();
+    
+    // Si no empieza con V- o E-, lo forzamos a V-
+    if (!value.startsWith('V-') && !value.startsWith('E-')) {
+        value = 'V-' + value.replace(/[^0-9]/g, '');
+    }
+
+    // Extraemos el prefijo y los números
+    let prefix = value.substring(0, 2);
+    let numbers = value.substring(2).replace(/[^0-9]/g, '');
+
+    // Aplicamos los puntos de miles
+    if (numbers.length > 0) {
+        if (numbers.length <= 8) {
+            // Formatear con puntos según la longitud
+            numbers = numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        } else {
+            // Limitar a 8 dígitos numéricos (máximo común)
+            numbers = numbers.substring(0, 8).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+    }
+
+    e.target.value = prefix + numbers;
+});
+
+
+
+
+
+
+
+    
     // --- VALIDACIÓN Y DISPARO ---
     function validarYGenerar(tipo) {
         const campos = [
