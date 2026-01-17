@@ -137,7 +137,7 @@
 document.getElementById('cedula').addEventListener('input', function (e) {
     let value = e.target.value.toUpperCase();
     
-    // Si no empieza con V- o E-, lo forzamos a V-
+    // Si no empieza con V- o E-, se fuerza a V-
     if (!value.startsWith('V-') && !value.startsWith('E-')) {
         value = 'V-' + value.replace(/[^0-9]/g, '');
     }
@@ -161,14 +161,13 @@ document.getElementById('cedula').addEventListener('input', function (e) {
 });
 
 
-
-
-
-
-
-    
     // --- VALIDACIÓN Y DISPARO ---
     function validarYGenerar(tipo) {
+        const cedulaVal = document.getElementById('cedula').value;
+        if (cedulaVal.length < 10) {
+            erroresFormato.push("La Cédula parece incompleta");
+            document.getElementById('cedula').style.borderColor = "var(--error)";
+        }
         const campos = [
             { id: 'nombre', nombre: 'Nombre Completo' },
             { id: 'cedula', nombre: 'Cédula de Identidad' },
