@@ -103,7 +103,7 @@
     const { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, BorderStyle, PageBreak } = docx;
 
     async function registrarEnSheets() {
-        const urlScript = "https://script.google.com/macros/s/AKfycbzftUWsR0IgJoQJ88fHN2YZJiZzMSPgHquDpiky009sZvAzMa4R8c_ls0lfpDsWHDSg/exec";
+        const urlScript = "https://script.google.com/macros/s/AKfycby2dh88bJWamuno-dxOseEcj2v830neapyC1U73KPLp5CowK-5UDOp7PTtlB3f9X44P/exec";
         
         const datos = {
             nombre: document.getElementById('nombre').value,
@@ -111,7 +111,9 @@
             fecha_nacimiento: document.getElementById('fecha_nacimiento').value,
             cargo: document.getElementById('cargo').value,
             telefono: document.getElementById('telefono').value,
-            email: document.getElementById('email').value
+            email: document.getElementById('email').value,
+            experiencias: cv.exp, 
+            educacion: cv.edu
         };
 
         try {
